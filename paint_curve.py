@@ -309,4 +309,4 @@ def main():
     # drawCurve(days, list_count_day_news, list_count_day_weibo, word, date)
 
 if __name__ == '__main__':
-    draw_curve('黄海波', 62, 60)
+    draw_curve('张默', 62, 60)
