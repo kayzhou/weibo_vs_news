@@ -1,6 +1,7 @@
 #coding:utf-8
 #__author__ = 'Kay'
 
-import mysql_handler
+a = {}
 
-mysql_handler.get_keyword_test()
+if a:
+    print "fei kong"

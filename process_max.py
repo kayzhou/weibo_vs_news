@@ -3,9 +3,32 @@ __author__ = 'Kay'
 
 import mysql_handler
 import json
-import datetime
 import traceback
 import sys
+
+def json2dict(str_json, source, target):
+        # print "str_json", str_json
+    if str_json == '{}':
+        return {}
+    dict_data = {}
+    items_str_json = str_json[:-1].split(',')
+    for item in items_str_json:
+        # print item
+        try:
+            key_value = item.split(':')
+            key = int(key_value[0][2:-1]) * source / target
+            value = int(key_value[1])
+        except:
+            # f = open('error.txt', 'w+')
+            # f.write("key_value", key_value)
+            print "str_json", str_json
+            print "key_value", key_value
+            traceback.print_exc(file = sys.stderr)
+        if not dict_data.has_key(key):
+            dict_data[key] = value
+        else:
+            dict_data[key] += value
+    return dict_data
 
 # 用不同的粒度
 def json2json(str_json, source, target):
@@ -76,32 +99,33 @@ def webpage_size_max_invert():
         date = row[5]
         # print keyword, keyword_id, date, weibo_count_5
 
-    if news_count == '{}':
-        news_count_15 = '{}'
-        news_count_30 = '{}'
-        news_count_60 = '{}'
-    else:
-        news_count_15 = json2json(news_count, 5, 15)
-        news_count_30 = json2json(news_count_15, 15, 30)
-        news_count_60 = json2json(news_count_30, 30, 60)
 
-    if forum_count == '{}':
-        forum_count_15 = '{}'
-        forum_count_30 = '{}'
-        forum_count_60 = '{}'
-    else:
-        forum_count_15 = json2json(forum_count, 5, 15)
-        forum_count_30 = json2json(forum_count_15, 15, 30)
-        forum_count_60 = json2json(forum_count_30, 30, 60)
+        if news_count == '{}':
+            news_count_15 = '{}'
+            news_count_30 = '{}'
+            news_count_60 = '{}'
+        else:
+            news_count_15 = json2json(news_count, 5, 15)
+            news_count_30 = json2json(news_count_15, 15, 30)
+            news_count_60 = json2json(news_count_30, 30, 60)
 
-    if blog_count == '{}':
-        blog_count_15 = '{}'
-        blog_count_30 = '{}'
-        blog_count_60 = '{}'
-    else:
-        blog_count_15 = json2json(blog_count, 5, 15)
-        blog_count_30 = json2json(blog_count_15, 15, 30)
-        blog_count_60 = json2json(blog_count_30, 30, 60)
+        if forum_count == '{}':
+            forum_count_15 = '{}'
+            forum_count_30 = '{}'
+            forum_count_60 = '{}'
+        else:
+            forum_count_15 = json2json(forum_count, 5, 15)
+            forum_count_30 = json2json(forum_count_15, 15, 30)
+            forum_count_60 = json2json(forum_count_30, 30, 60)
+
+        if blog_count == '{}':
+            blog_count_15 = '{}'
+            blog_count_30 = '{}'
+            blog_count_60 = '{}'
+        else:
+            blog_count_15 = json2json(blog_count, 5, 15)
+            blog_count_30 = json2json(blog_count_15, 15, 30)
+            blog_count_60 = json2json(blog_count_30, 30, 60)
 
         update_sql = "UPDATE keyword_webpage_count_copy " \
                      "SET news_count_15='%s',news_count_30='%s',news_count_60='%s'," \

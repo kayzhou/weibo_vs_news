@@ -4,12 +4,9 @@ __author__ = 'Kay'
 import mysql_handler
 import json
 import datetime
-import traceback
-import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import process_max
-import time_tool
 
 # 得到一天的新闻数据
 def getDataByWordDay(keyword, date):
@@ -140,20 +137,22 @@ def autolabel(rects, ax):
     # attach some text labels
     for rect in rects:
         height = rect.get_height()
-        ax.text(rect.get_x()+rect.get_width()/2., 1.05*height, '%d'%int(height),
-                ha='center', va='bottom')
+        ax.text(rect.get_x()+rect.get_width()/2., 1.05*height, '%d'%int(height), ha='center', va='bottom')
 
 # 返回list [ 0, 0, 12, 24, 1, 0, 9, ... , 0 ] 共days天，粒度为size
 def processDict(dict_data, days, size):
     print "processDict starts."
+
     # 初始化列表
     list_count = []
     for i in range(days * 24 * (60 /size)):
         list_count.append(0)
 
-    for key in dict_data:
-        # print 'key:', key, ', value:', dict_data[key]
-        list_count[int(key)] = dict_data[key]
+    if dict_data:
+        for key in dict_data:
+            # print 'key:', key, ', value:', dict_data[key]
+            print key
+            list_count[int(key)] = dict_data[key]
 
     return list_count
 
@@ -185,21 +184,22 @@ def get_weibo_list(word, size):
 # 得到网页数据列表
 def get_webpage_list(type, word, size):
     print "get_webpage_list starts."
-    # con = mysql_handler.get_mysql_con()
     con = mysql_handler.get_local_con()
     cur = con.cursor()
+    # 数据库中只存储了5分钟的粒度
     SQL = "SELECT %s_count_5 FROM keyword_webpage_count where keyword='%s';" % (type, word)
     # print SQL
     cur.execute(SQL)
     row = cur.fetchone()
     dict_count = process_max.json2dict(row[0], 5, size)
-    # print "row[0]:", row[0]
+
     con.close()
     return dict_count
 
 # 2015-03-06 实验所用的曲线
 # 微博，新闻，论坛，博客都画出
 def draw_curve(word, days, size):
+    print word, size
     weibo_list = processDict(get_weibo_list(word, size), days, size)
     news_list = processDict(get_webpage_list('news', word, size), days, size)
     forum_list = processDict(get_webpage_list('forum', word, size), days, size)
@@ -309,4 +309,4 @@ def main():
     # drawCurve(days, list_count_day_news, list_count_day_weibo, word, date)
 
 if __name__ == '__main__':
-    draw_curve('拉共体', 62, 60)
+    draw_curve('360杀毒', 62, 5)
