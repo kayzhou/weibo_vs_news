@@ -6,8 +6,6 @@ import json
 import datetime
 import traceback
 import sys
-import numpy as np
-import matplotlib.pyplot as plt
 
 # 用不同的粒度
 def json2json(str_json, source, target):
@@ -33,31 +31,6 @@ def json2json(str_json, source, target):
         else:
             dict_data[key] += value
     return json.dumps(dict_data)
-
-# convert
-def json2dict(str_json, source, target):
-    # print "str_json", str_json
-    if str_json == '{}':
-        return '{}'
-    dict_data = {}
-    items_str_json = str_json[:-1].split(',')
-    for item in items_str_json:
-        # print item
-        try:
-            key_value = item.split(':')
-            key = int(key_value[0][2:-1]) * source / target
-            value = int(key_value[1])
-        except:
-            # f = open('error.txt', 'w+')
-            # f.write("key_value", key_value)
-            print "str_json", str_json
-            print "key_value", key_value
-            traceback.print_exc(file = sys.stderr)
-        if not dict_data.has_key(key):
-            dict_data[key] = value
-        else:
-            dict_data[key] += value
-    return dict_data
 
 # 不同粒度数据之间的转换,5分钟-> 15分钟 30分钟 60分钟
 def weibo_different_size_invert():
@@ -85,67 +58,59 @@ def weibo_different_size_invert():
 
     con.close()
 
-# 不同粒度数据之间的转换,5分钟-> 15分钟 30分钟 60分钟
+# 不同粒度数据之间的转换,5分钟-> 15分钟 30分钟 60分钟，相应MAX也算出来了！
 def webpage_size_max_invert():
     con = mysql_handler.get_mysql_con()
     cur = con.cursor()
-    cur.execute("select keyword,keyword_id,news_count_5,forum_count_5,blog_count_5 from keyword_webpage_count;")
+    cur.execute("select keyword,keyword_id,news_count_5,forum_count_5,blog_count_5,date from keyword_webpage_count_copy;")
     rst = cur.fetchall()
     count = 0
     for row in rst:
         count += 1
         print "count:", count
-        # keyword = row[0]
+        keyword = row[0]
         keyword_id = row[1]
         news_count = row[2]
         forum_count = row[3]
         blog_count = row[4]
+        date = row[5]
         # print keyword, keyword_id, date, weibo_count_5
 
-        news_count_15 = json2json(news_count, 5, 15)
-        news_count_30 = json2json(news_count_15, 15, 30)
-        news_count_60 = json2json(news_count_30, 30, 60)
-        # print news_count_60
-        forum_count_15 = json2json(forum_count, 5, 15)
-        forum_count_30 = json2json(forum_count_15, 15, 30)
-        forum_count_60 = json2json(forum_count_30, 30, 60)
+	if news_count == '{}':
+	    news_count_15 = '{}'
+	    news_count_30 = '{}'
+	    news_count_60 = '{}'
+	else:
+            news_count_15 = json2json(news_count, 5, 15)
+            news_count_30 = json2json(news_count_15, 15, 30)
+            news_count_60 = json2json(news_count_30, 30, 60)
 
-        blog_count_15 = json2json(blog_count, 5, 15)
-        blog_count_30 = json2json(blog_count_15, 15, 30)
-        blog_count_60 = json2json(blog_count_30, 30, 60)
+        if forum_count == '{}':
+            forum_count_15 = '{}'
+            forum_count_30 = '{}'
+            forum_count_60 = '{}'
+	else:
+	    forum_count_15 = json2json(forum_count, 5, 15)
+	    forum_count_30 = json2json(forum_count_15, 15, 30)
+            forum_count_60 = json2json(forum_count_30, 30, 60)
 
-        news_index_15, news_value_15 = max_index_value(news_count_15)
-        news_index_30, news_value_30 = max_index_value(news_count_30)
-        news_index_60, news_value_60 = max_index_value(news_count_60)
-        # print news_index_60, news_value_60
+	if blog_count == '{}':
+            blog_count_15 = '{}'
+            blog_count_30 = '{}'
+            blog_count_60 = '{}'
+	else:
+            blog_count_15 = json2json(blog_count, 5, 15)
+            blog_count_30 = json2json(blog_count_15, 15, 30)
+            blog_count_60 = json2json(blog_count_30, 30, 60)
 
-        forum_index_15, forum_value_15 = max_index_value(forum_count_15)
-        forum_index_30, forum_value_30 = max_index_value(forum_count_30)
-        forum_index_60, forum_value_60 = max_index_value(forum_count_60)
-
-        blog_index_15, blog_value_15 = max_index_value(blog_count_15)
-        blog_index_30, blog_value_30 = max_index_value(blog_count_30)
-        blog_index_60, blog_value_60 = max_index_value(blog_count_60)
-
-        update_sql = "UPDATE keyword_webpage_max " \
-                     "SET news_max_index_15='%s',news_max_value_15='%s',forum_max_index_15='%s',forum_max_value_15='%s',blog_max_index_15='%s',blog_max_value_15='%s'," \
-                     "news_max_index_30='%s',news_max_value_30='%s',forum_max_index_30='%s',forum_max_value_30='%s',blog_max_index_30='%s',blog_max_value_30='%s'," \
-                     "news_max_index_60='%s',news_max_value_60='%s',forum_max_index_60='%s',forum_max_value_60='%s',blog_max_index_60='%s',blog_max_value_60='%s' " \
-                     "WHERE keyword_id='%s'" \
-                     % (news_index_15, news_value_15, forum_index_15, forum_value_15, blog_index_15, blog_value_15,
-                        news_index_30, news_value_30, forum_index_30, forum_value_30, blog_index_30, blog_value_30,
-                        news_index_60, news_value_60, forum_index_60, forum_value_60, blog_index_60, blog_value_60, keyword_id)
+        update_sql = "UPDATE keyword_webpage_count_copy " \
+                     "SET news_count_15='%s',news_count_30='%s',news_count_60='%s'," \
+                     "forum_count_15='%s',forum_count_30='%s',forum_count_60='%s'," \
+                     "blog_count_15='%s',blog_count_30='%s',blog_count_60='%s' " \
+                     "WHERE keyword_id='%s' and date='%s'" % (news_count_15, news_count_30, news_count_60,
+        forum_count_15, forum_count_30, forum_count_60, blog_count_15, blog_count_30, blog_count_60, keyword_id, date)
         # print update_sql
         mysql_handler.executeSQL(con, update_sql)
-
-        # SQL = "update keyword_webpage_count set news_count_15='%s',news_count_30='%s',news_count_60='%s'," \
-        #       "forum_count_15='%s',forum_count_30='%s',forum_count_60='%s'," \
-        #       "blog_count_15='%s',blog_count_30='%s',blog_count_60='%s'" \
-        #       " where keyword='%s' and keyword_id='%s'" \
-        #         % (news_count_15,news_count_30,news_count_60,forum_count_15,forum_count_30,forum_count_60,
-        #            blog_count_15,blog_count_30,blog_count_60,keyword,keyword_id)
-        # # print SQL
-        # mysql_handler.executeSQL(con, SQL)
 
     con.close()
 
@@ -167,6 +132,7 @@ def max_index_value(str_json):
     # print 'str_json', str_json
     if str_json == '{}':
         return '-1', 0
+
     try:
         dict_data = json.loads(str_json)
     except:
@@ -185,7 +151,7 @@ def max_index_value(str_json):
 def webpage_process_max():
     con = mysql_handler.get_mysql_con()
     cur = con.cursor()
-    SQL = 'SELECT * FROM keyword_webpage_count;'
+    SQL = 'SELECT keyword,keyword_id,news_count_5,forum_count_5,blog_count_5,date FROM keyword_webpage_count;'
     cur.execute(SQL)
     rst = cur.fetchall()
     for row in rst:
@@ -194,13 +160,16 @@ def webpage_process_max():
         news_count = row[2]
         forum_count = row[3]
         blog_count = row[4]
+        date = row[5]
+
         news_index, news_value = max_index_value(news_count)
         forum_index, forum_value = max_index_value(forum_count)
         blog_index, blog_value = max_index_value(blog_count)
 
         update_sql = "UPDATE keyword_webpage_count " \
-                     "SET news_max_index='%s',news_max_value='%s',forum_max_index='%s',forum_max_value='%s',blog_max_index='%s',blog_max_value='%s'" \
-                     "WHERE keyword_id='%s'" % (news_index, news_value, forum_index, forum_value, blog_index, blog_value, keyword_id)
+                     "SET news_max_index_5='%s',news_max_value_5='%s',forum_max_index_5='%s',forum_max_value_5='%s'," \
+                     "blog_max_index_5='%s',blog_max_value_5='%s' WHERE keyword_id='%s'" \
+                     % (news_index, news_value, forum_index, forum_value, blog_index, blog_value, keyword_id)
         mysql_handler.executeSQL(con, update_sql)
     con.close()
 
@@ -341,12 +310,19 @@ def weibo_process_max_2plus():
 
     con.close()
 
+# get max_index, max_value from dict
 def get_max_from_dict(dict_index_value):
     dict_keys = dict_index_value.keys()
     dict_values = dict_index_value.values()
     max_value = max(dict_index_value.values())
     max_index = dict_keys[dict_values.index(max_value)]
     return max_index, max_value
+
+def test():
+    # process_max()
+    # print json.loads('{"16770": 1, "14700": 1, "16652": 2, "528": 1, "16792": 1, "15381": 2, "664": 1, "14234": 1, "15389": 1, "5150": 1, "13728": 1, "17378": 1, "15395": 1, "9254": 1, "16794": 1, "15452": 2, "16810": 1, "697": 1, "14785": 1, "15682": 1, "17092": 1, "17095": 1, "16866": 1, "12494": 1, "16592": 1, "15571": 1, "16727": 1, "16228": 1, "17115": 1, "14812": 1, "17022": 1, "12770": 1, "10468": 1, "12521": 1, "4972": 1, "10477": 1, "7022": 1, "12275": 1, "14197": 1, "17129": 1, "16506": 1, "14203": 1, "8188": 1, "15357": 1, "12542": 1}')
+    # print new_json_loads('{"16770": 1, "14700": 1, "16652": 2, "528": 1, "16792": 1, "15381": 2, "664": 1, "14234": 1, "15389": 1, "5150": 1, "13728": 1, "17378": 1, "15395": 1, "9254": 1, "16794": 1, "15452": 2, "16810": 1, "697": 1, "14785": 1, "15682": 1, "17092": 1, "17095": 1, "16866": 1, "12494": 1, "16592": 1, "15571": 1, "16727": 1, "16228": 1, "17115": 1, "14812": 1, "17022": 1, "12770": 1, "10468": 1, "12521": 1, "4972": 1, "10477": 1, "7022": 1, "12275": 1, "14197": 1, "17129": 1, "16506": 1, "14203": 1, "8188": 1, "15357": 1, "12542": 1}')
+    pass
 
 if __name__ == '__main__':
     webpage_size_max_invert()
